@@ -18,12 +18,14 @@ from typing import (
     List,
     Literal,
     Optional,
+    Sequence,
     Tuple,
     Type,
     Union,
     cast,
 )
 
+from azure.core.exceptions import ResourceNotFoundError
 import numpy as np
 from langchain_core.callbacks import (
     AsyncCallbackManagerForRetrieverRun,
@@ -449,6 +451,16 @@ class AzureSearch(VectorStore):
             return await self.embeddings.aembed_query(text)
         else:
             return cast(Callable, self.embedding_function)(text)
+
+    def get_by_ids(self, ids: Sequence[str], /) -> list[Document]:
+        mathching_document = []
+        for id in ids:
+            try:
+                doc = self.client.get_document(key=id)
+                mathching_document.append(_result_to_document(doc))
+            except ResourceNotFoundError:
+                continue
+        return mathching_document
 
     def add_texts(
         self,
